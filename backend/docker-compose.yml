@@ -1,0 +1,203 @@
+services:
+
+  # ════════════════════════════════════════════════════════════
+  #  DATABASES  (one isolated Mongo per service)
+  # ════════════════════════════════════════════════════════════
+
+  user-db:
+    image: mongo:7-jammy
+    container_name: campus-user-db
+    restart: unless-stopped
+    volumes:
+      - user-db-data:/data/db
+    networks:
+      - campus-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  event-db:
+    image: mongo:7-jammy
+    container_name: campus-event-db
+    restart: unless-stopped
+    volumes:
+      - event-db-data:/data/db
+    networks:
+      - campus-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  reg-db:
+    image: mongo:7-jammy
+    container_name: campus-reg-db
+    restart: unless-stopped
+    volumes:
+      - reg-db-data:/data/db
+    networks:
+      - campus-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ════════════════════════════════════════════════════════════
+  #  USER & AUTH SERVICE  (port 3001)
+  # ════════════════════════════════════════════════════════════
+
+  user-auth-service:
+    build:
+      context: ./user-auth-service
+      dockerfile: Dockerfile
+    container_name: campus-user-auth
+    restart: unless-stopped
+    depends_on:
+      user-db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      MONGO_URI: mongodb://user-db:27017/campus_auth_db
+      JWT_SECRET: ${JWT_SECRET:-campus_connect_jwt_secret_change_in_prod}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-campus_connect_refresh_secret_change_in_prod}
+      JWT_EXPIRE: ${JWT_EXPIRE:-15m}
+      JWT_REFRESH_EXPIRE: ${JWT_REFRESH_EXPIRE:-7d}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASS: ${EMAIL_PASS:-}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@campusconnect.local}
+    networks:
+      - campus-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 30s
+
+  # ════════════════════════════════════════════════════════════
+  #  EVENT MANAGEMENT SERVICE  (port 3002)
+  # ════════════════════════════════════════════════════════════
+
+  event-service:
+    build:
+      context: ./event-service
+      dockerfile: Dockerfile
+    container_name: campus-event-service
+    restart: unless-stopped
+    depends_on:
+      event-db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      MONGO_URI: mongodb://event-db:27017/campus_event_db
+      JWT_SECRET: ${JWT_SECRET:-campus_connect_jwt_secret_change_in_prod}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    networks:
+      - campus-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 30s
+
+  # ════════════════════════════════════════════════════════════
+  #  REGISTRATION & NOTIFICATION SERVICE  (port 3003)
+  # ════════════════════════════════════════════════════════════
+
+  registration-service:
+    build:
+      context: ./registration-service
+      dockerfile: Dockerfile
+    container_name: campus-reg-service
+    restart: unless-stopped
+    depends_on:
+      reg-db:
+        condition: service_healthy
+      event-service:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3003
+      MONGO_URI: mongodb://reg-db:27017/campus_registration_db
+      JWT_SECRET: ${JWT_SECRET:-campus_connect_jwt_secret_change_in_prod}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      # Uses docker service name — NOT localhost
+      EVENT_SERVICE_URL: http://event-service:3002
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASS: ${EMAIL_PASS:-}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@campusconnect.local}
+    networks:
+      - campus-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3003/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 30s
+
+  # ════════════════════════════════════════════════════════════
+  #  API GATEWAY  (port 3000 — public entry point)
+  # ════════════════════════════════════════════════════════════
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: campus-api-gateway
+    restart: unless-stopped
+    ports:
+      # Only the gateway is exposed to the host machine.
+      # Downstream services are reachable only via docker-internal network.
+      - "3000:3000"
+    depends_on:
+      user-auth-service:
+        condition: service_healthy
+      event-service:
+        condition: service_healthy
+      registration-service:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # Uses docker service names — NOT localhost
+      AUTH_SERVICE_URL: http://user-auth-service:3001
+      EVENT_SERVICE_URL: http://event-service:3002
+      REGISTRATION_SERVICE_URL: http://registration-service:3003
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    networks:
+      - campus-net
+
+# ════════════════════════════════════════════════════════════
+#  NAMED VOLUMES  (data survives container restarts)
+# ════════════════════════════════════════════════════════════
+
+volumes:
+  user-db-data:
+    driver: local
+  event-db-data:
+    driver: local
+  reg-db-data:
+    driver: local
+
+# ════════════════════════════════════════════════════════════
+#  NETWORK  (isolated bridge — services talk by service name)
+# ════════════════════════════════════════════════════════════
+
+networks:
+  campus-net:
+    driver: bridge

@@ -1,0 +1,1289 @@
+{
+  "info": {
+    "_postman_id": "5e0bf8ef-3f54-4a61-a2a0-5f2d4f5c7a81",
+    "name": "CampusConnect - Full Application Sequential Tests",
+    "description": "End-to-end Postman collection for CampusConnect. Run in order: Auth -> Users -> Events -> Registration -> Notifications -> Media -> Cleanup. Re-run safe for most requests because register endpoints allow 409 on existing users.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 Health",
+      "item": [
+        {
+          "name": "Auth Service Health",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{authBaseUrl}}/health",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Event Service Health",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{eventBaseUrl}}/health",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Registration Service Health",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{registrationBaseUrl}}/health",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Media Service Health",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{mediaBaseUrl}}/health",
+              "host": ["{{mediaBaseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 Auth Bootstrap",
+      "item": [
+        {
+          "name": "Register Organizer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Register accepted or already exists', function () {",
+                  "  pm.expect([200, 201, 409]).to.include(pm.response.code);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data) {",
+                  "  if (json.data.accessToken) pm.collectionVariables.set('organizerToken', json.data.accessToken);",
+                  "  if (json.data.refreshToken) pm.collectionVariables.set('organizerRefreshToken', json.data.refreshToken);",
+                  "  if (json.data.user && (json.data.user._id || json.data.user.id)) pm.collectionVariables.set('organizerId', json.data.user._id || json.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Organizer One\",\n  \"email\": \"{{organizerEmail}}\",\n  \"password\": \"{{organizerPassword}}\",\n  \"role\": \"organizer\"\n}"
+            },
+            "url": {
+              "raw": "{{authBaseUrl}}/api/auth/register",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login Organizer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login successful', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data) {",
+                  "  pm.collectionVariables.set('organizerToken', json.data.accessToken);",
+                  "  pm.collectionVariables.set('organizerRefreshToken', json.data.refreshToken);",
+                  "  if (json.data.user && (json.data.user._id || json.data.user.id)) pm.collectionVariables.set('organizerId', json.data.user._id || json.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{organizerEmail}}\",\n  \"password\": \"{{organizerPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{authBaseUrl}}/api/auth/login",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Register Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Register accepted or already exists', function () {",
+                  "  pm.expect([200, 201, 409]).to.include(pm.response.code);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data) {",
+                  "  if (json.data.accessToken) pm.collectionVariables.set('adminToken', json.data.accessToken);",
+                  "  if (json.data.refreshToken) pm.collectionVariables.set('adminRefreshToken', json.data.refreshToken);",
+                  "  if (json.data.user && (json.data.user._id || json.data.user.id)) pm.collectionVariables.set('adminId', json.data.user._id || json.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\",\n  \"role\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{authBaseUrl}}/api/auth/register",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login successful', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data) {",
+                  "  pm.collectionVariables.set('adminToken', json.data.accessToken);",
+                  "  pm.collectionVariables.set('adminRefreshToken', json.data.refreshToken);",
+                  "  if (json.data.user && (json.data.user._id || json.data.user.id)) pm.collectionVariables.set('adminId', json.data.user._id || json.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{authBaseUrl}}/api/auth/login",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Register Student 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Register accepted or already exists', function () {",
+                  "  pm.expect([200, 201, 409]).to.include(pm.response.code);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data) {",
+                  "  if (json.data.accessToken) pm.collectionVariables.set('student1Token', json.data.accessToken);",
+                  "  if (json.data.refreshToken) pm.collectionVariables.set('student1RefreshToken', json.data.refreshToken);",
+                  "  if (json.data.user && (json.data.user._id || json.data.user.id)) pm.collectionVariables.set('student1Id', json.data.user._id || json.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Student One\",\n  \"email\": \"{{student1Email}}\",\n  \"password\": \"{{studentPassword}}\",\n  \"role\": \"student\"\n}"
+            },
+            "url": {
+              "raw": "{{authBaseUrl}}/api/auth/register",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login Student 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login successful', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data) {",
+                  "  pm.collectionVariables.set('student1Token', json.data.accessToken);",
+                  "  pm.collectionVariables.set('student1RefreshToken', json.data.refreshToken);",
+                  "  if (json.data.user && (json.data.user._id || json.data.user.id)) pm.collectionVariables.set('student1Id', json.data.user._id || json.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student1Email}}\",\n  \"password\": \"{{studentPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{authBaseUrl}}/api/auth/login",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Register Student 2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Register accepted or already exists', function () {",
+                  "  pm.expect([200, 201, 409]).to.include(pm.response.code);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data) {",
+                  "  if (json.data.accessToken) pm.collectionVariables.set('student2Token', json.data.accessToken);",
+                  "  if (json.data.refreshToken) pm.collectionVariables.set('student2RefreshToken', json.data.refreshToken);",
+                  "  if (json.data.user && (json.data.user._id || json.data.user.id)) pm.collectionVariables.set('student2Id', json.data.user._id || json.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Student Two\",\n  \"email\": \"{{student2Email}}\",\n  \"password\": \"{{studentPassword}}\",\n  \"role\": \"student\"\n}"
+            },
+            "url": {
+              "raw": "{{authBaseUrl}}/api/auth/register",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login Student 2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login successful', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data) {",
+                  "  pm.collectionVariables.set('student2Token', json.data.accessToken);",
+                  "  pm.collectionVariables.set('student2RefreshToken', json.data.refreshToken);",
+                  "  if (json.data.user && (json.data.user._id || json.data.user.id)) pm.collectionVariables.set('student2Id', json.data.user._id || json.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student2Email}}\",\n  \"password\": \"{{studentPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{authBaseUrl}}/api/auth/login",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Student 1 Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{student1RefreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{authBaseUrl}}/api/auth/refresh",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Logout Student 1",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "url": {
+              "raw": "{{authBaseUrl}}/api/auth/logout",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 User Profile and Admin User APIs",
+      "item": [
+        {
+          "name": "Get My Profile (Student 1)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "url": {
+              "raw": "{{authBaseUrl}}/api/users/profile",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update My Profile (Student 1)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student1Token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Student One Updated\",\n  \"department\": \"CSE\",\n  \"year\": \"3rd\",\n  \"bio\": \"Hackathon participant\",\n  \"avatar\": \"https://example.com/avatar.png\"\n}"
+            },
+            "url": {
+              "raw": "{{authBaseUrl}}/api/users/profile",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Admin - Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{authBaseUrl}}/api/users?page=1&limit=20",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin - Get Student 1 By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{authBaseUrl}}/api/users/{{student1Id}}",
+              "host": ["{{authBaseUrl}}"],
+              "path": ["api", "users", "{{student1Id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Event Categories",
+      "item": [
+        {
+          "name": "Get Categories (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/categories",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Create Category (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Category created or already exists', function () {",
+                  "  pm.expect([200, 201, 409]).to.include(pm.response.code);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.category && (json.data.category._id || json.data.category.id)) {",
+                  "  pm.collectionVariables.set('categoryId', json.data.category._id || json.data.category.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hackathon\",\n  \"description\": \"Coding and innovation events\",\n  \"color\": \"#2563EB\",\n  \"icon\": \"laptop\"\n}"
+            },
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/categories",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Update Category (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Coding, innovation, and campus challenge events\",\n  \"color\": \"#1D4ED8\"\n}"
+            },
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/categories/{{categoryId}}",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Event CRUD",
+      "item": [
+        {
+          "name": "Create Main Event (Organizer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Event created successfully', function () {",
+                  "  pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.event) {",
+                  "  var event = json.data.event;",
+                  "  if (event._id || event.id) pm.collectionVariables.set('mainEventId', event._id || event.id);",
+                  "  if (event.title) pm.collectionVariables.set('mainEventTitle', event.title);",
+                  "  if (event.startDate) pm.collectionVariables.set('mainEventDate', event.startDate);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{organizerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Campus Hack Night 2026\",\n  \"description\": \"Overnight coding sprint for students.\",\n  \"shortDescription\": \"12-hour coding challenge\",\n  \"category\": \"Hackathon\",\n  \"tags\": [\"coding\", \"innovation\", \"team\"],\n  \"venue\": {\n    \"name\": \"Main Auditorium\",\n    \"address\": \"Block A, Campus\",\n    \"isOnline\": false,\n    \"meetingLink\": \"\"\n  },\n  \"startDate\": \"2026-05-20T09:00:00.000Z\",\n  \"endDate\": \"2026-05-20T21:00:00.000Z\",\n  \"registrationDeadline\": \"2026-05-18T23:59:59.000Z\",\n  \"capacity\": { \"total\": 200 },\n  \"status\": \"published\",\n  \"isPublic\": true,\n  \"isFeatured\": true,\n  \"price\": 0\n}"
+            },
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/events",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "events"]
+            }
+          }
+        },
+        {
+          "name": "Create Small Capacity Event (Organizer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Event created successfully', function () {",
+                  "  pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.event) {",
+                  "  var event = json.data.event;",
+                  "  if (event._id || event.id) pm.collectionVariables.set('smallEventId', event._id || event.id);",
+                  "  if (event.title) pm.collectionVariables.set('smallEventTitle', event.title);",
+                  "  if (event.startDate) pm.collectionVariables.set('smallEventDate', event.startDate);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{organizerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Tiny Challenge Event\",\n  \"description\": \"Small capacity event for waitlist testing.\",\n  \"shortDescription\": \"Waitlist demo event\",\n  \"category\": \"Hackathon\",\n  \"tags\": [\"waitlist\", \"test\"],\n  \"venue\": {\n    \"name\": \"Seminar Hall\",\n    \"address\": \"Block B, Campus\",\n    \"isOnline\": false,\n    \"meetingLink\": \"\"\n  },\n  \"startDate\": \"2026-05-21T09:00:00.000Z\",\n  \"endDate\": \"2026-05-21T12:00:00.000Z\",\n  \"registrationDeadline\": \"2026-05-20T23:59:59.000Z\",\n  \"capacity\": { \"total\": 1 },\n  \"status\": \"published\",\n  \"isPublic\": true,\n  \"isFeatured\": false,\n  \"price\": 0\n}"
+            },
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/events",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "events"]
+            }
+          }
+        },
+        {
+          "name": "Get Events (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/events?status=published&page=1&limit=10&sort=-startDate",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "events"],
+              "query": [
+                { "key": "status", "value": "published" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "sort", "value": "-startDate" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Main Event By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/events/{{mainEventId}}",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "events", "{{mainEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get My Events (Organizer)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{organizerToken}}" }],
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/events/my/events",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "events", "my", "events"]
+            }
+          }
+        },
+        {
+          "name": "Update Main Event (Organizer)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{organizerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shortDescription\": \"12-hour coding challenge with mentor support\",\n  \"isFeatured\": false,\n  \"capacity\": { \"total\": 220 }\n}"
+            },
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/events/{{mainEventId}}",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "events", "{{mainEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Main Event Status (Organizer)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{organizerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"published\"\n}"
+            },
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/events/{{mainEventId}}/status",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "events", "{{mainEventId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Internal Capacity Increment (Organizer token for test)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{organizerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"increment\"\n}"
+            },
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/events/{{mainEventId}}/capacity",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "events", "{{mainEventId}}", "capacity"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Registration Flow",
+      "item": [
+        {
+          "name": "Student 1 Register - Confirmed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Registration created', function () {",
+                  "  pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.registration) {",
+                  "  if (json.data.registration._id || json.data.registration.id) pm.collectionVariables.set('registrationId', json.data.registration._id || json.data.registration.id);",
+                  "  if (json.data.registration.eventId) pm.collectionVariables.set('smallEventId', json.data.registration.eventId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student1Token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"{{smallEventId}}\",\n  \"eventTitle\": \"{{smallEventTitle}}\",\n  \"eventDate\": \"{{smallEventDate}}\",\n  \"notes\": \"First student registration\"\n}"
+            },
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/registrations",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "registrations"]
+            }
+          }
+        },
+        {
+          "name": "Student 2 Register - Waitlist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Waitlist registration created', function () {",
+                  "  pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.registration) {",
+                  "  if (json.data.registration._id || json.data.registration.id) pm.collectionVariables.set('waitlistRegistrationId', json.data.registration._id || json.data.registration.id);",
+                  "  if (json.data.registration.eventId) pm.collectionVariables.set('smallEventId', json.data.registration.eventId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student2Token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"{{smallEventId}}\",\n  \"eventTitle\": \"{{smallEventTitle}}\",\n  \"eventDate\": \"{{smallEventDate}}\",\n  \"notes\": \"Second student should go to waitlist\"\n}"
+            },
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/registrations",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "registrations"]
+            }
+          }
+        },
+        {
+          "name": "Student 1 - My Registrations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/registrations/my?page=1&limit=10",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "registrations", "my"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Student 1 - Upcoming Registrations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/registrations/my/upcoming?page=1&limit=10",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "registrations", "my", "upcoming"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Student 1 - Registration By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/registrations/{{registrationId}}",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "registrations", "{{registrationId}}"]
+            }
+          }
+        },
+        {
+          "name": "Student 2 - My Waitlist Position",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student2Token}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/registrations/waitlist/my/{{smallEventId}}",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "registrations", "waitlist", "my", "{{smallEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "Organizer - Event Registrations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{organizerToken}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/registrations/event/{{smallEventId}}?page=1&limit=50",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "registrations", "event", "{{smallEventId}}"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "50" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Student 1 - Cancel Registration",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student1Token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Test cancellation to trigger promotion\"\n}"
+            },
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/registrations/{{registrationId}}",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "registrations", "{{registrationId}}"]
+            }
+          }
+        },
+        {
+          "name": "Organizer - Event Registrations After Promotion",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{organizerToken}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/registrations/event/{{smallEventId}}?page=1&limit=50",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "registrations", "event", "{{smallEventId}}"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "50" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Student 2 - Confirmed Registration (Capture ID)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Fetch confirmed registrations', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const registrations = json?.data?.registrations || [];",
+                  "if (registrations.length > 0) {",
+                  "  const confirmed = registrations.find(r => r.status === 'confirmed');",
+                  "  if (confirmed && (confirmed._id || confirmed.id)) {",
+                  "    pm.collectionVariables.set('promotedRegistrationId', confirmed._id || confirmed.id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student2Token}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/registrations/my?status=confirmed&page=1&limit=10",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "registrations", "my"],
+              "query": [
+                { "key": "status", "value": "confirmed" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Organizer - Check In Promoted Student 2",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{organizerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/registrations/{{promotedRegistrationId}}/checkin",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "registrations", "{{promotedRegistrationId}}", "checkin"]
+            }
+          }
+        },
+        {
+          "name": "Student 2 - Full History",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student2Token}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/registrations/my/history",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "registrations", "my", "history"]
+            }
+          }
+        },
+        {
+          "name": "Student 2 - Past Events",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student2Token}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/registrations/my/past?page=1&limit=10",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "registrations", "my", "past"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Notifications",
+      "item": [
+        {
+          "name": "Student 1 Notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.notifications && json.data.notifications.length > 0) {",
+                  "  pm.collectionVariables.set('student1NotificationId', json.data.notifications[0]._id || json.data.notifications[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/notifications?page=1&limit=10",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "notifications"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Student 1 Notification Read",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/notifications/{{student1NotificationId}}/read",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "notifications", "{{student1NotificationId}}", "read"]
+            }
+          }
+        },
+        {
+          "name": "Mark All Student 1 Notifications Read",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/notifications/read-all",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "notifications", "read-all"]
+            }
+          }
+        },
+        {
+          "name": "Delete Student 1 Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/notifications/{{student1NotificationId}}",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "notifications", "{{student1NotificationId}}"]
+            }
+          }
+        },
+        {
+          "name": "Clear All Student 1 Notifications",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "url": {
+              "raw": "{{registrationBaseUrl}}/api/notifications",
+              "host": ["{{registrationBaseUrl}}"],
+              "path": ["api", "notifications"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Media Service",
+      "item": [
+        {
+          "name": "Admin Media Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{mediaBaseUrl}}/api/media/stats",
+              "host": ["{{mediaBaseUrl}}"],
+              "path": ["api", "media", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Media List (Student 1)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "url": {
+              "raw": "{{mediaBaseUrl}}/api/media?page=1&limit=10",
+              "host": ["{{mediaBaseUrl}}"],
+              "path": ["api", "media"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Event Media By Entity",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{mediaBaseUrl}}/api/media/entity/event/{{mainEventId}}",
+              "host": ["{{mediaBaseUrl}}"],
+              "path": ["api", "media", "entity", "event", "{{mainEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Media By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{mediaBaseUrl}}/api/media/{{mediaId}}",
+              "host": ["{{mediaBaseUrl}}"],
+              "path": ["api", "media", "{{mediaId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Media Transform URL",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{mediaBaseUrl}}/api/media/{{mediaId}}/transform?width=600&height=400&crop=fill&quality=auto&format=auto",
+              "host": ["{{mediaBaseUrl}}"],
+              "path": ["api", "media", "{{mediaId}}", "transform"],
+              "query": [
+                { "key": "width", "value": "600" },
+                { "key": "height", "value": "400" },
+                { "key": "crop", "value": "fill" },
+                { "key": "quality", "value": "auto" },
+                { "key": "format", "value": "auto" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Single File (Manual attach)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "" },
+                { "key": "category", "value": "general", "type": "text" },
+                { "key": "entityType", "value": "event", "type": "text" },
+                { "key": "entityId", "value": "{{mainEventId}}", "type": "text" },
+                { "key": "altText", "value": "Campus media", "type": "text" },
+                { "key": "caption", "value": "Uploaded from Postman", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{mediaBaseUrl}}/api/media/upload",
+              "host": ["{{mediaBaseUrl}}"],
+              "path": ["api", "media", "upload"]
+            }
+          }
+        },
+        {
+          "name": "Upload Multiple Files (Manual attach)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "files", "type": "file", "src": "" },
+                { "key": "files", "type": "file", "src": "" },
+                { "key": "category", "value": "general", "type": "text" },
+                { "key": "entityType", "value": "event", "type": "text" },
+                { "key": "entityId", "value": "{{mainEventId}}", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{mediaBaseUrl}}/api/media/upload/multiple",
+              "host": ["{{mediaBaseUrl}}"],
+              "path": ["api", "media", "upload", "multiple"]
+            }
+          }
+        },
+        {
+          "name": "Upload Event Banner + Gallery (Manual attach)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{organizerToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "banner", "type": "file", "src": "" },
+                { "key": "gallery", "type": "file", "src": "" },
+                { "key": "gallery", "type": "file", "src": "" },
+                { "key": "entityId", "value": "{{mainEventId}}", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{mediaBaseUrl}}/api/media/upload/event",
+              "host": ["{{mediaBaseUrl}}"],
+              "path": ["api", "media", "upload", "event"]
+            }
+          }
+        },
+        {
+          "name": "Update Media Metadata",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student1Token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"altText\": \"Updated alt text\",\n  \"caption\": \"Updated caption\"\n}"
+            },
+            "url": {
+              "raw": "{{mediaBaseUrl}}/api/media/{{mediaId}}",
+              "host": ["{{mediaBaseUrl}}"],
+              "path": ["api", "media", "{{mediaId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Media",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student1Token}}" }],
+            "url": {
+              "raw": "{{mediaBaseUrl}}/api/media/{{mediaId}}",
+              "host": ["{{mediaBaseUrl}}"],
+              "path": ["api", "media", "{{mediaId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 Cleanup",
+      "item": [
+        {
+          "name": "Delete Main Event (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/events/{{mainEventId}}",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "events", "{{mainEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Small Event (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/events/{{smallEventId}}",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "events", "{{smallEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Category (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{eventBaseUrl}}/api/categories/{{categoryId}}",
+              "host": ["{{eventBaseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "authBaseUrl", "value": "http://localhost:3001" },
+    { "key": "eventBaseUrl", "value": "http://localhost:3002" },
+    { "key": "registrationBaseUrl", "value": "http://localhost:3003" },
+    { "key": "mediaBaseUrl", "value": "http://localhost:3004" },
+    { "key": "organizerEmail", "value": "organizer@campusconnect.com" },
+    { "key": "adminEmail", "value": "admin@campusconnect.com" },
+    { "key": "student1Email", "value": "student1@campusconnect.com" },
+    { "key": "student2Email", "value": "student2@campusconnect.com" },
+    { "key": "organizerPassword", "value": "123456" },
+    { "key": "adminPassword", "value": "123456" },
+    { "key": "studentPassword", "value": "123456" },
+    { "key": "organizerToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "student1Token", "value": "" },
+    { "key": "student2Token", "value": "" },
+    { "key": "organizerRefreshToken", "value": "" },
+    { "key": "adminRefreshToken", "value": "" },
+    { "key": "student1RefreshToken", "value": "" },
+    { "key": "student2RefreshToken", "value": "" },
+    { "key": "organizerId", "value": "" },
+    { "key": "adminId", "value": "" },
+    { "key": "student1Id", "value": "" },
+    { "key": "student2Id", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "mainEventId", "value": "" },
+    { "key": "mainEventTitle", "value": "" },
+    { "key": "mainEventDate", "value": "" },
+    { "key": "smallEventId", "value": "" },
+    { "key": "smallEventTitle", "value": "" },
+    { "key": "smallEventDate", "value": "" },
+    { "key": "registrationId", "value": "" },
+    { "key": "waitlistRegistrationId", "value": "" },
+    { "key": "promotedRegistrationId", "value": "" },
+    { "key": "student1NotificationId", "value": "" },
+    { "key": "mediaId", "value": "" }
+  ]
+}

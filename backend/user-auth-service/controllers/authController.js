@@ -2,10 +2,7 @@ const { validationResult } = require('express-validator');
 const crypto = require('crypto');
 const User = require('../models/User');
 const { generateTokens, verifyRefreshToken } = require('../utils/generateToken');
-const { sendOTPEmail, sendPasswordResetEmail } = require('../utils/sendEmail');
-
-// ─── Helper ───────────────────────────────────────────────────────────────────
-const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+const { sendPasswordResetEmail } = require('../utils/sendEmail');
 
 const sendTokenResponse = (res, user, statusCode = 200) => {
   const payload = { id: user._id, name: user.name, email: user.email, role: user.role };
@@ -36,7 +33,6 @@ const register = async (req, res, next) => {
       return res.status(409).json({ success: false, message: 'Email already registered.' });
     }
 
-    const otp = generateOTP();
     const user = await User.create({
       name,
       email: email.toLowerCase(),
@@ -44,14 +40,8 @@ const register = async (req, res, next) => {
       role: role || 'student',
       department: department || '',
       year: year || '',
-      otp: {
-        code: otp,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min
-      },
+      isVerified: true, // Auto-verified (OTP removed)
     });
-
-    // Send OTP email (non-blocking)
-    sendOTPEmail(user.email, user.name, otp);
 
     sendTokenResponse(res, user, 201);
   } catch (error) {
@@ -60,28 +50,9 @@ const register = async (req, res, next) => {
 };
 
 // ─── @route  POST /api/auth/verify-otp ───────────────────────────────────────
+// ❌ DISABLED: OTP email service removed. Users are auto-verified on registration.
 const verifyOTP = async (req, res, next) => {
-  try {
-    const { email, otp } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+otp');
-
-    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
-    if (user.isVerified) return res.status(400).json({ success: false, message: 'Email already verified.' });
-    if (!user.otp?.code || user.otp.code !== otp) {
-      return res.status(400).json({ success: false, message: 'Invalid OTP.' });
-    }
-    if (user.otp.expiresAt < new Date()) {
-      return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
-    }
-
-    user.isVerified = true;
-    user.otp = undefined;
-    await user.save();
-
-    res.json({ success: true, message: 'Email verified successfully.' });
-  } catch (error) {
-    next(error);
-  }
+  res.status(410).json({ success: false, message: 'OTP verification is no longer required. Users are auto-verified.' });
 };
 
 // ─── @route  POST /api/auth/login ────────────────────────────────────────────

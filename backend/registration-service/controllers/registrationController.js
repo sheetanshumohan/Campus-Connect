@@ -9,7 +9,10 @@ const {
   sendCancellationEmail,
 } = require('../utils/sendEmail');
 
-const EVENT_SERVICE_URL = process.env.EVENT_SERVICE_URL || 'http://localhost:3002';
+const EVENT_SERVICE_URL = (process.env.EVENT_SERVICE_URL || '').replace(/\/+$/, '');
+if (!EVENT_SERVICE_URL) {
+  throw new Error('EVENT_SERVICE_URL is required. Set it in registration-service/.env');
+}
 
 // ─── Helper: create in-app notification ───────────────────────────────────────
 const createNotification = async (userId, type, title, message, eventId = null, eventTitle = null) => {

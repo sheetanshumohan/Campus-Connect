@@ -9,6 +9,8 @@ const createTransporter = () => {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+    connectionTimeout: 5000, // 5 second timeout for connection
+    socketTimeout: 5000,     // 5 second timeout for socket operations
   });
 };
 
@@ -18,6 +20,14 @@ const createTransporter = () => {
  */
 const sendEmail = async ({ to, subject, html, text }) => {
   try {
+    // Skip email sending if EMAIL_HOST is not configured (development mode)
+    if (!process.env.EMAIL_HOST) {
+      console.log(`📧 [DEV MODE] Email to ${to} skipped (EMAIL_HOST not configured):`);
+      console.log(`   Subject: ${subject}`);
+      console.log(`   OTP or content would be sent here.`);
+      return { messageId: 'dev-mode-skipped' };
+    }
+
     const transporter = createTransporter();
     const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM,
@@ -32,25 +42,6 @@ const sendEmail = async ({ to, subject, html, text }) => {
     console.error(`❌ Email failed to ${to}:`, error.message);
     // Don't throw — email failure shouldn't break the request
   }
-};
-
-/**
- * Send OTP email for account verification.
- */
-const sendOTPEmail = async (to, name, otp) => {
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
-      <h2 style="color: #6366f1;">Campus Connect — Email Verification</h2>
-      <p>Hi <strong>${name}</strong>,</p>
-      <p>Your OTP for account verification is:</p>
-      <div style="background: #f4f4f8; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-        <span style="font-size: 36px; font-weight: bold; letter-spacing: 12px; color: #6366f1;">${otp}</span>
-      </div>
-      <p>This OTP is valid for <strong>10 minutes</strong>.</p>
-      <p style="color: #888; font-size: 12px;">If you didn't request this, please ignore this email.</p>
-    </div>
-  `;
-  return sendEmail({ to, subject: 'Campus Connect — Verify Your Email', html });
 };
 
 /**
@@ -73,4 +64,4 @@ const sendPasswordResetEmail = async (to, name, resetLink) => {
   return sendEmail({ to, subject: 'Campus Connect — Password Reset Request', html });
 };
 
-module.exports = { sendEmail, sendOTPEmail, sendPasswordResetEmail };
+module.exports = { sendEmail, sendPasswordResetEmail };

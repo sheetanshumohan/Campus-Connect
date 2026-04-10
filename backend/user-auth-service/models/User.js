@@ -49,15 +49,11 @@ const userSchema = new mongoose.Schema(
     },
     isVerified: {
       type: Boolean,
-      default: false,
+      default: true, // Auto-verified on registration (OTP removed)
     },
     isActive: {
       type: Boolean,
       default: true,
-    },
-    otp: {
-      code: { type: String, select: false },
-      expiresAt: { type: Date, select: false },
     },
     refreshToken: {
       type: String,
